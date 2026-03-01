@@ -1,0 +1,86 @@
+[project]
+name = "bergschacht-custom-resources"
+version = "0.0.0"
+description = "CDK Custom Resource Lambdas for the Bergschacht infrastructure"
+requires-python = ">=3.14"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+# No runtime dependencies live here, they live in the individual packages' pyproject.toml
+[dependency-groups]
+dev = [
+    "coverage",
+    "deptry",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "pyright[nodejs]",
+    "pytest-randomly",
+    "pytest-mock",
+    "boto3",
+    "boto3-stubs[s3tables]",
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    'if TYPE_CHECKING:',
+    'pragma: no cover',
+    "if __name__ == '__main__':",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+lint.select = ["ALL"]
+lint.ignore = [
+    "ANN401",   # Disallow typing.Any
+    "ANN204",   # Require return type annotation for magic methods
+    "COM812",   # Require trailing commas - conflicts with ruff formatter
+    "D105",     # Require docstrings in magic methods
+    "D200",     # Require one-line docstrings to fit on one line
+    "D203",     # Require 1 blank line before class docstring
+    "D212",     # Require multi-line docstring summary to start at the first line
+    "D400",     # Require first line of docstring to end with a period
+    "D401",     # Require first line of docstring to be in imperative mood
+    "D415",     # Require first line of docstring to end with punctuation
+    "EM102",    # Exception must not use an f-string literal
+    "FIX002",   # Require TODO comments to contain issue links
+    "PGH003",   # Disallow blanket type: ignore comments
+    "TC002",    # Require third-party imports only used for type annotations to be in TYPE_CHECKING blocks
+    "TC003",    # Require standard imports only used for type annotations to be in TYPE_CHECKING blocks
+    "TD002",    # Require author in TODO comments
+    "TD003",    # Require issue link in TODO comments
+    "TRY003",   # Disallow long exception messages outside exception class
+    "TRY400"    # Require logging.exception instead of logging.error in exception handlers
+]
+lint.unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"packages/*/tests/*" = [
+    "DTZ001",   # Require tzinfo in datetime constructors
+    "INP001",   # Require packages to to have a __init__.py file
+    "PLR2004",  # Disallow magic values
+    "PLR0913",  # Disallow too many arguments
+    "S101",     # Disallow use of assert
+    "SLF001",   # Disallow accessing private members
+    "S311",     # Disallow usage of pseudo-random generators
+]
+".github/scripts/*" = [
+    "T20",      # Allow print statements in CI scripts
+]
+
+[tool.pyright]
+pythonVersion = "3.13"
+pythonPlatform = "Linux"
+typeCheckingMode = "strict"
+
+executionEnvironments = [
+    { root = "tests", reportPrivateUsage = false },
+    { root = "packages/s3tables-table-manager", extraPaths = ["packages/s3tables-table-manager/src"] }
+]

@@ -1,0 +1,33 @@
+# These tasks should only be used by GH actions
+
+[tools]
+python = "3.14"
+uv = "latest"
+pre-commit = "latest"
+
+[tasks.install-ci]
+description = "Install dependencies for CI"
+run = "uv sync --all-packages --all-extras --dev"
+
+[tasks.pre-commit-ci]
+description = "Run pre-commit hooks (CI only)"
+run = "pre-commit run --all-files"
+
+[tasks.test-ci]
+description = "Run tests with coverage in CI for a specific package"
+usage = '''
+arg "[package]" help="Package to run tests for"
+'''
+run = '''
+if [ -z "${usage_package:-}" ]; then
+    echo "Error: No package specified. Please provide a package name." >&2
+    exit 1
+fi
+if [ ! -d "packages/${usage_package}/tests" ]; then
+    echo "No tests directory for ${usage_package}, skipping"
+    exit 0
+fi
+echo "Running tests for package: ${usage_package}"
+uv run --package ${usage_package} coverage run -m pytest "packages/${usage_package}/tests"
+uv run --package ${usage_package} coverage report --fail-under=80
+'''

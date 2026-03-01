@@ -1,0 +1,20 @@
+[project]
+name = "s3tables-table-manager"
+version = "0.1.0"
+description = "CDK Custom Resource that manages Iceberg table lifecycle on S3 Tables"
+requires-python = ">=3.14"
+dependencies = [
+    "pydantic>=2.10.0",
+    "pyiceberg[s3fs,rest-sigv4]>=0.9.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.5,<0.9.0"]
+build-backend = "uv_build"
+
+# https://github.com/fpgmaas/deptry/issues/1484
+[tool.deptry.per_rule_ignores]
+DEP003 = ["boto3"]
+
+[tool.bergschacht.artifacts.s3tables-table-manager]
+type = "lambda"

@@ -1,0 +1,72 @@
+[tools]
+python = "3.14"
+uv = "latest"
+pre-commit = "latest"
+
+[tasks.install]
+description = "Install all dependencies"
+run = [
+    "uv sync --all-packages --all-extras --dev",
+    "pre-commit install",
+]
+
+[tasks.pre-commit]
+description = "Run pre-commit hooks on all files"
+run = "pre-commit run --all-files"
+
+[tasks.lint]
+description = "Show all issues detected by linter"
+run = [
+    "uv run ruff check .",
+    "uv run ruff format . --check",
+]
+
+[tasks.lint-fix]
+description = "Fix all auto-fixable linting issues"
+run = [
+    "uv run ruff check --fix .",
+    "uv run ruff format .",
+]
+
+[tasks.test]
+description = "Run tests with coverage (optionally for a specific package)"
+usage = '''
+arg "[package]" help="Package to run tests for (runs all if omitted)"
+'''
+run = '''
+if [ -z "${usage_package:-}" ]; then
+    echo "Running tests for all packages..."
+    for dir in packages/*/; do
+        if [ -f "$dir/pyproject.toml" ] && [ -d "$dir/tests" ]; then
+            pkg=$(basename "$dir")
+            echo "Testing package: $pkg"
+            uv run --package "$pkg" coverage run -m pytest "packages/$pkg/tests" || exit 1
+            uv run --package "$pkg" coverage report --fail-under=80 || exit 1
+        fi
+    done
+else
+    echo "Running tests for package: ${usage_package}"
+    uv run --package ${usage_package} coverage run -m pytest "packages/${usage_package}/tests"
+    uv run --package ${usage_package} coverage report --fail-under=80
+fi
+'''
+
+[tasks.docker-build]
+description = "Build Docker image locally"
+usage = '''
+arg "<package>" help="Package to build Docker image for (e.g., etl-orders, etl-users)"
+'''
+run = '''
+echo "Building Docker image for package: ${usage_package}..."
+docker build -t sample-python-repo-${usage_package}:dev -f packages/${usage_package}/Dockerfile .
+'''
+
+[tasks.docker-run]
+description = "Run Docker image locally"
+usage = '''
+arg "<package>" help="Package to run Docker image for (e.g., etl-orders, etl-users)"
+'''
+run = '''
+echo "Running Docker image for package: ${usage_package}..."
+docker run --rm sample-python-repo-${usage_package}:dev
+'''
