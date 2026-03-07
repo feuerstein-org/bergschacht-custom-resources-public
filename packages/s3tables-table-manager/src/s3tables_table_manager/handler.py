@@ -134,14 +134,14 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
 
     if request_type == "Delete":
         if props.get("RetainOnDelete", "false").lower() == "true":
-            logger.info("RetainOnDelete=true — skipping drop of %s.%s", namespace, table_name)
+            logger.info("RetainOnDelete=true - skipping drop of %s.%s", namespace, table_name)
             return {"PhysicalResourceId": physical_id}
         region = os.environ["AWS_REGION"]
         catalog = _get_catalog(table_bucket_arn, region)
         table_identifier = f"{namespace}.{table_name}"
         try:
-            catalog.drop_table(table_identifier)
-            logger.info("Dropped table %s", table_identifier)
+            catalog.purge_table(table_identifier)
+            logger.info("Dropped & purged table %s", table_identifier)
         except NoSuchTableError:
             logger.warning(
                 "Table %s not found (may already be gone)",
