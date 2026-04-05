@@ -133,9 +133,11 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
     )
 
     if request_type == "Delete":
+        # During a DELETE (including rollback of a failed CREATE), CloudFormation passes the physical ID.
+        existing_physical_id: str = event.get("PhysicalResourceId", physical_id)
         if props.get("RetainOnDelete", "false").lower() == "true":
             logger.info("RetainOnDelete=true - skipping drop of %s.%s", namespace, table_name)
-            return {"PhysicalResourceId": physical_id}
+            return {"PhysicalResourceId": existing_physical_id}
         region = os.environ["AWS_REGION"]
         catalog = _get_catalog(table_bucket_arn, region)
         table_identifier = f"{namespace}.{table_name}"
@@ -147,7 +149,7 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
                 "Table %s not found (may already be gone)",
                 table_identifier,
             )
-        return {"PhysicalResourceId": physical_id}
+        return {"PhysicalResourceId": existing_physical_id}
 
     # --- Create / Update -------------------------------------------------
     region = os.environ["AWS_REGION"]
