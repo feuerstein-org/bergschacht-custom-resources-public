@@ -348,6 +348,6 @@ jobs:
               workflow_id: 'deploy.yml',
               ref: 'master',
               inputs: {
-                pipeline: 'prod'
+                pipeline: 'auto'
               }
             });
