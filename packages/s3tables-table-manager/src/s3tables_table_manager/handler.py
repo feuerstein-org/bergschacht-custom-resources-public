@@ -160,14 +160,17 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
         logger.info("Creating table %s with %d columns", table_identifier, len(schema.columns))
         table = catalog.create_table(table_identifier, schema=initial_schema)  # pyright: ignore[reportUnknownMemberType]
 
-        apply_partition_spec(table, schema.partition_spec)
-        apply_sort_order(table, schema.sort_order)
+        with table.transaction() as txn:
+            apply_partition_spec(txn, schema.partition_spec)
+            apply_sort_order(txn, schema.sort_order)
+
     else:
         table = catalog.load_table(table_identifier)
-        cleanup_stale_references(table, {col.name for col in schema.columns})
-        apply_schema(table, schema.columns)
-        apply_partition_spec(table, schema.partition_spec)
-        apply_sort_order(table, schema.sort_order)
+        with table.transaction() as txn:
+            cleanup_stale_references(txn, {col.name for col in schema.columns})
+            apply_schema(txn, schema.columns)
+            apply_partition_spec(txn, schema.partition_spec)
+            apply_sort_order(txn, schema.sort_order)
 
     schema_id = table.schema().schema_id
     table_arn = _get_table_arn(table_bucket_arn, namespace, table_name, region)

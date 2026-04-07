@@ -29,7 +29,7 @@ bergschacht-custom-resources/
 
 ### s3tables-table-manager
 
-CDK Custom Resource that **owns the full Iceberg table lifecycle** on S3 Tables: it creates tables on `Create`, evolves schema / partition spec / sort order on `Update`, and drops the table on `Delete`. The CDK schema definition is the source of truth — columns, partition specs, and sort orders are fully reconciled using [PyIceberg](https://py.iceberg.apache.org/).
+CDK Custom Resource that **owns the full Iceberg table lifecycle** on S3 Tables: it creates tables on `Create`, evolves schema / partition spec / sort order on `Update`, and drops the table on `Delete`. The CDK schema definition is the source of truth - columns, partition specs, and sort orders are fully reconciled using [PyIceberg](https://py.iceberg.apache.org/).
 
 **Lambda handler:** `s3tables_table_manager.handler.handler`
 
@@ -57,7 +57,7 @@ CDK Custom Resource that **owns the full Iceberg table lifecycle** on S3 Tables:
    type = "lambda"
    ```
 
-3. The workspace glob (`packages/*`) picks it up automatically — no workflow changes needed.
+3. The workspace glob (`packages/*`) picks it up automatically - no workflow changes needed.
 
 ## Development
 
@@ -71,7 +71,7 @@ mise run lint-fix       # Auto-fix lint issues
 
 ## CI/CD Setup
 
-Same setup as `sample-python-repo` — see [the CDK repo README](https://github.com/feuerstein-org/bergschacht) for details.
+Same setup as `sample-python-repo` - see [the CDK repo README](https://github.com/feuerstein-org/bergschacht) for details.
 
 ### Required Secrets
 
