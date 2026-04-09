@@ -124,52 +124,87 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
     physical_id = f"{table_bucket_arn}|{namespace}|{table_name}"
 
     logger.info(
-        "TableManager %s for %s.%s (bucket=%s)",
+        "TableManager event received: RequestType=%s, table=%s.%s, bucket=%s, "
+        "LogicalResourceId=%s, PhysicalResourceId=%s, StackId=%s",
         request_type,
         namespace,
         table_name,
         table_bucket_arn,
+        event.get("LogicalResourceId"),
+        event.get("PhysicalResourceId"),
+        event.get("StackId"),
     )
 
     if request_type == "Delete":
         # During a DELETE (including rollback of a failed CREATE), CloudFormation passes the physical ID.
         existing_physical_id: str = event.get("PhysicalResourceId", physical_id)
         region = os.environ["AWS_REGION"]
+        logger.info(
+            "Delete: purging table %s.%s from bucket %s (region=%s)", namespace, table_name, table_bucket_arn, region
+        )
         catalog = _get_catalog(table_bucket_arn, region)
         table_identifier = f"{namespace}.{table_name}"
         try:
             catalog.purge_table(table_identifier)
-            logger.info("Dropped & purged table %s", table_identifier)
         except NoSuchTableError:
             logger.warning(
                 "Table %s not found (may already be gone)",
-                table_identifier,
+                existing_physical_id,
             )
+        logger.info("Delete complete: PhysicalResourceId=%s", existing_physical_id)
         return {"PhysicalResourceId": existing_physical_id}
 
     # --- Create / Update -------------------------------------------------
     region = os.environ["AWS_REGION"]
 
     schema = IcebergSchemaDefinition.model_validate_json(props["Schema"])
+    logger.info(
+        "%s: table=%s.%s, columns=%d, partition_fields=%d, sort_fields=%d (region=%s)",
+        request_type,
+        namespace,
+        table_name,
+        len(schema.columns),
+        len(schema.partition_spec),
+        len(schema.sort_order),
+        region,
+    )
+    logger.info(
+        "%s: desired columns=%s, partition spec=%s, sort order=%s",
+        request_type,
+        [f"{c.name}:{c.type}" for c in schema.columns],
+        [f"{p.resolved_name}({p.transform}) on {p.source_column}" for p in schema.partition_spec],
+        [f"{s.source_column} {s.direction}" for s in schema.sort_order],
+    )
 
     catalog = _get_catalog(table_bucket_arn, region)
     table_identifier = f"{namespace}.{table_name}"
 
     if request_type == "Create":
         initial_schema = build_initial_schema(schema.columns)
-        logger.info("Creating table %s with %d columns", table_identifier, len(schema.columns))
+        logger.info("Create: creating table %s with %d columns", table_identifier, len(schema.columns))
         table = catalog.create_table(table_identifier, schema=initial_schema)  # pyright: ignore[reportUnknownMemberType]
+        logger.info("Create: table %s created, applying partition spec and sort order", table_identifier)
 
         with table.transaction() as txn:
             apply_partition_spec(txn, schema.partition_spec)
             apply_sort_order(txn, schema.sort_order)
 
     else:
+        logger.info("Update: loading existing table %s", table_identifier)
         table = catalog.load_table(table_identifier)
+        logger.info(
+            "Update: current schema_id=%s, columns=%s",
+            table.schema().schema_id,
+            [f.name for f in table.schema().fields],
+        )
         with table.transaction() as txn:
+            logger.info("Update: cleaning up stale partition/sort references for removed columns")
             cleanup_stale_references(txn, {col.name for col in schema.columns})
+            logger.info("Update: applying schema evolution")
             apply_schema(txn, schema.columns)
+            logger.info("Update: applying partition spec evolution")
             apply_partition_spec(txn, schema.partition_spec)
+            logger.info("Update: applying sort order evolution")
             apply_sort_order(txn, schema.sort_order)
 
     schema_id = table.schema().schema_id
