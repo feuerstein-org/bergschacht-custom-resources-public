@@ -71,9 +71,6 @@ lint.unfixable = []
     "SLF001",   # Disallow accessing private members
     "S311",     # Disallow usage of pseudo-random generators
 ]
-".github/scripts/*" = [
-    "T20",      # Allow print statements in CI scripts
-]
 
 [tool.pyright]
 pythonVersion = "3.13"
