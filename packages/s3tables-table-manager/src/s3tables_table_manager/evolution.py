@@ -76,7 +76,28 @@ def apply_schema(txn: Transaction, columns: list[ColumnDef]) -> None:
 
                 # Setting doc to None doesn't clear it, need to explicitly set to empty string
                 doc = col.doc if col.doc is not None else ""
-                update.update_column(col.name, field_type=col_type, doc=doc)
+
+                # pyiceberg's update_column only accepts a `field_type` for columns whose
+                # *existing* type is primitive - it raises "Cannot change column type: ...
+                # is not a primitive" for any non-primitive (list/map/struct) column, even
+                # when the type is unchanged. The Iceberg spec likewise has no in-place type
+                # evolution for complex types. So only feed `field_type` to pyiceberg for
+                # primitive columns, for complex columns we reconcile docs only.
+                if existing.field_type.is_primitive:
+                    update.update_column(col.name, field_type=col_type, doc=doc)
+                else:
+                    if str(existing.field_type) != str(col_type):
+                        raise ValueError(
+                            f"Cannot change column '{col.name}' from {existing.field_type} to "
+                            f"{col.type} in place: Iceberg does not support evolving a complex "
+                            "(list/map/struct) column's type as a unit. To apply this change, "
+                            "drop the column and re-add it with the new type - note this "
+                            "discards the column's existing data. Type promotions for complex types "
+                            "(e.g. list<int> -> list<long>) are supported by Iceberg but are not "
+                            "implemented by s3tables-table-manager."
+                        )
+                    # Identical type (modulo field ids): only the doc may have changed.
+                    update.update_column(col.name, doc=doc)
 
         # Remove columns not in the desired schema
         for name in current_fields:
