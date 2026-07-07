@@ -23,12 +23,19 @@ from .types import (
 
 
 class ColumnDef(BaseModel, frozen=True):
-    """A single column in the desired Iceberg schema."""
+    """
+    A single column in the desired Iceberg schema.
+
+    `renamed_from` signifies the existing column name which is getting renamed
+    """
+
+    model_config = ConfigDict(validate_by_name=True)
 
     name: str
     type: IcebergTypeStr
     required: bool = False
     doc: str | None = None
+    renamed_from: str | None = Field(None, validation_alias="renamedFrom")
 
     @property
     def iceberg_type(self) -> IcebergType:
@@ -119,6 +126,23 @@ class IcebergSchemaDefinition(BaseModel, frozen=True):
             for sf in self.sort_order
             if sf.source_column not in column_names
         ]
+
+        # A `renamedFrom` that collides with a live column name means the old name
+        # was reintroduced while the directive still points at it - on deploy the
+        # rename would hijack that column.
+        rename_sources = [col.renamed_from for col in self.columns if col.renamed_from]
+        errors += [
+            f"Column '{src}' is both a live column name and the 'renamedFrom' of another "
+            f"column: the rename directive must be removed before reintroducing '{src}'"
+            for src in rename_sources
+            if src in column_names
+        ]
+        seen: set[str] = set()
+        for src in rename_sources:
+            if src in seen:
+                errors.append(f"Multiple columns declare 'renamedFrom' = '{src}'")
+            seen.add(src)
+
         if errors:
             raise ValueError("; ".join(errors))
         return self

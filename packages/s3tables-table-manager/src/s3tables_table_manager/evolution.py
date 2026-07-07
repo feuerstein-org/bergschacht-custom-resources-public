@@ -25,6 +25,46 @@ logger = logging.getLogger(__package__)
 # ---------------------------------------------------------------------------
 
 
+def apply_renames(txn: Transaction, columns: list[ColumnDef]) -> None:
+    """
+    Apply column renames declared via ``ColumnDef.renamed_from``.
+
+    A true Iceberg ``rename_column`` preserves the field id and all existing
+    data as well as doesn't interfer with partition spec or sort order.
+
+    Run this function before deleting old columns or changing the schema. The
+    function is idempotent and will have no effect if the rename is alraedy in place.
+
+    Raises if a rename target collides with a *different* live column
+    """
+    current_names = {field.name for field in txn.table_metadata.schema().fields}
+
+    renames: list[tuple[str, str]] = []
+    for col in columns:
+        if not col.renamed_from or col.renamed_from not in current_names:
+            # No-op because already renamed or no renames.
+            continue
+        if col.name in current_names:
+            raise ValueError(
+                f"Cannot rename '{col.renamed_from}' -> '{col.name}': a different column named "
+                f"'{col.name}' already exists on the table. If this deploy also deletes the old "
+                f"'{col.name}', split it across two deploys - first deploy the deletion of "
+                f"'{col.name}', then deploy the rename of '{col.renamed_from}' into that name. "
+                "Doing both at once is not supported."
+            )
+        renames.append((col.renamed_from, col.name))
+
+    if not renames:
+        return
+
+    with txn.update_schema() as update:
+        for old_name, new_name in renames:
+            logger.info("Renaming column %s -> %s", old_name, new_name)
+            update.rename_column(old_name, new_name)
+
+    logger.info("Renames staged")
+
+
 def apply_schema(txn: Transaction, columns: list[ColumnDef]) -> None:
     """
     Reconcile the table's current Iceberg schema with the desired column list.

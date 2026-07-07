@@ -50,6 +50,7 @@ from pyiceberg.exceptions import NoSuchTableError
 
 from .evolution import (
     apply_partition_spec,
+    apply_renames,
     apply_schema,
     apply_sort_order,
     build_initial_schema,
@@ -198,6 +199,10 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
             [f.name for f in table.schema().fields],
         )
         with table.transaction() as txn:
+            # Renames must run first: afterwards the schema shows the new names, so the
+            # reconcilers below see renamed columns as existing (no spurious delete/add)
+            # and their partition/sort references follow the preserved field id.
+            apply_renames(txn, schema.columns)
             logger.info("Update: cleaning up stale partition/sort references for removed columns")
             cleanup_stale_references(txn, {col.name for col in schema.columns})
             logger.info("Update: applying schema evolution")
