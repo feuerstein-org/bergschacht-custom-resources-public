@@ -2,9 +2,14 @@ name: Deploy
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   workflow_dispatch:
+    inputs:
+      redeploy_package_version:
+        description: "Rebuild-only: release tag <package>/v<version> to rebuild & push to ECR/S3 (leave blank for a normal deploy)"
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -14,3 +19,6 @@ jobs:
   deploy:
     uses: feuerstein-org/seilbahn/.github/workflows/deploy.yml@v1
     secrets: inherit
+    # On push this input is empty -> normal change-driven deploy.
+    with:
+      redeploy_package_version: ${{ inputs.redeploy_package_version }}
