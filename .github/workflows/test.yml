@@ -9,5 +9,5 @@ on:
 
 jobs:
   test:
-    uses: feuerstein-org/seilbahn/.github/workflows/test.yml@v1
+    uses: feuerstein-org/seilbahn/.github/workflows/test.yml@v2
     secrets: inherit

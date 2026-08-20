@@ -941,7 +941,7 @@ wheels = [
 
 [[package]]
 name = "s3tables-table-manager"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/s3tables-table-manager" }
 dependencies = [
     { name = "pydantic" },

@@ -42,6 +42,7 @@ lint.ignore = [
     "ANN401",   # Disallow typing.Any
     "ANN204",   # Require return type annotation for magic methods
     "COM812",   # Require trailing commas - conflicts with ruff formatter
+    "CPY001",   # Require copyright notice inside each file
     "D105",     # Require docstrings in magic methods
     "D200",     # Require one-line docstrings to fit on one line
     "D203",     # Require 1 blank line before class docstring

@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   deploy:
-    uses: feuerstein-org/seilbahn/.github/workflows/deploy.yml@v1
+    uses: feuerstein-org/seilbahn/.github/workflows/deploy.yml@v2
     secrets: inherit
     # On push this input is empty -> normal change-driven deploy.
     with:

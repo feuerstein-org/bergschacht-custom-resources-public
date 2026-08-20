@@ -13,6 +13,20 @@ run = "uv sync --all-packages --all-extras --dev"
 description = "Run pre-commit hooks (CI only)"
 run = "pre-commit run --all-files"
 
+[tasks.build-lambda]
+description = "Install a package and its dependencies into dist/<package> for the Lambda zip"
+usage = '''
+arg "<package>" help="Package to build the Lambda contents for"
+'''
+run = '''
+OUTPUT_DIR="dist/${usage_package}"
+rm -rf "$OUTPUT_DIR"
+uv pip install \
+    --target "$OUTPUT_DIR" \
+    --python python3.14 \
+    "./packages/${usage_package}"
+'''
+
 [tasks.test-ci]
 description = "Run tests with coverage in CI for a specific package"
 usage = '''

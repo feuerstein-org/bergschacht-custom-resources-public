@@ -6,7 +6,8 @@ A [uv workspace](https://docs.astral.sh/uv/concepts/workspaces/) monorepo for CD
 
 ```
 bergschacht-custom-resources/
-├── pyproject.toml                  # Workspace root (defines members)
+├── pyproject.toml                  # Workspace root (defines uv members)
+├── seilbahn.toml                   # Packages & artifacts the CI/CD pipeline builds
 ├── packages/
 │   └── s3tables-table-manager/
 │       ├── pyproject.toml          # version = "0.1.0"
@@ -17,9 +18,6 @@ bergschacht-custom-resources/
 │           ├── evolution.py        # Schema / partition / sort evolution
 │           └── handler.py          # Lambda entry point
 └── .github/
-    ├── scripts/
-    │   ├── extract_config.py
-    │   └── update_ssm_manifest.py
     └── workflows/
         ├── deploy.yml
         └── test.yml
@@ -45,19 +43,22 @@ CDK Custom Resource that **owns the full Iceberg table lifecycle** on S3 Tables:
        └── handler.py
    ```
 
-2. Add artifact config in the package's `pyproject.toml`:
+2. Give it a `pyproject.toml` (this is where its version lives):
 
    ```toml
    [project]
    name = "my-custom-resource"
    version = "0.1.0"
    dependencies = ["boto3"]
-
-   [tool.bergschacht.artifacts.my-custom-resource]
-   type = "lambda"
    ```
 
-3. The workspace glob (`packages/*`) picks it up automatically - no workflow changes needed.
+3. Declare it in the root `seilbahn.toml`:
+
+   ```toml
+   [packages.my-custom-resource]
+   path = "packages/my-custom-resource"
+   artifacts.my-custom-resource = { type = "lambda", build = "mise run build-lambda my-custom-resource" }
+   ```
 
 ## Development
 

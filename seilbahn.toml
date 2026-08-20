@@ -1,0 +1,8 @@
+schema-version = 1
+
+[defaults]
+runtime = "python"
+
+[packages.s3tables-table-manager]
+path = "packages/s3tables-table-manager"
+artifacts.s3tables-table-manager = { type = "lambda", build = "mise run build-lambda s3tables-table-manager" }
