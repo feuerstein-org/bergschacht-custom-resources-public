@@ -74,7 +74,7 @@ mise run lint-fix       # Auto-fix lint issues
 
 ## CI/CD Setup
 
-Uses [Seilbahn public workflows](https://github.com/feuerstein-org/seilbahn-public#required-configuration-in-the-consumer-repo). Tests require no secrets. Deployment runs only in private repositories, configure the following settings there.
+Uses [Seilbahn public workflows](https://github.com/feuerstein-org/seilbahn#required-configuration-in-the-consumer-repo). Tests require no secrets. Deployment runs only in private repositories, configure the following settings there.
 
 For your own deployment, clone this repository and push it to a new private GitHub repository. Connect it to a private Bergschacht repository using `CDK_REPO_OWNER` and `CDK_REPO_NAME`, and configure the settings below in your private copy. Seilbahn then publishes the Lambda artifact and updates that Bergschacht repository's version manifest.
 
