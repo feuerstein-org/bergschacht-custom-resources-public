@@ -1,6 +1,6 @@
 # Bergschacht Custom Resources
 
-A [uv workspace](https://docs.astral.sh/uv/concepts/workspaces/) monorepo for CDK Custom Resource Lambda functions used by the [Bergschacht](https://github.com/feuerstein-org/bergschacht) CDK infrastructure. See the [sample-python-monorepo](https://github.com/feuerstein-org/sample-python-monorepo) to get an understanding of how the deployment works.
+A [uv workspace](https://docs.astral.sh/uv/concepts/workspaces/) monorepo for CDK Custom Resource Lambda functions used by the [Bergschacht](https://github.com/feuerstein-org/bergschacht-public) CDK infrastructure.
 
 ## Workspace Structure
 
@@ -60,6 +60,8 @@ CDK Custom Resource that **owns the full Iceberg table lifecycle** on S3 Tables:
    artifacts.my-custom-resource = { type = "lambda", build = "mise run build-lambda my-custom-resource" }
    ```
 
+> Note: Currently publishing goes through Seilbhan but I plan to open source as much as possible directly on npm instead.
+
 ## Development
 
 ```bash
@@ -72,13 +74,14 @@ mise run lint-fix       # Auto-fix lint issues
 
 ## CI/CD Setup
 
-Same setup as `sample-python-repo` - see [the CDK repo README](https://github.com/feuerstein-org/bergschacht) for details.
+Uses [Seilbahn public workflows](https://github.com/feuerstein-org/seilbahn-public#required-configuration-in-the-consumer-repo). Tests require no secrets. Deployment runs only in private repositories, configure the following settings there.
+
+For your own deployment, clone this repository and push it to a new private GitHub repository. Connect it to a private Bergschacht repository using `CDK_REPO_OWNER` and `CDK_REPO_NAME`, and configure the settings below in your private copy. Seilbahn then publishes the Lambda artifact and updates that Bergschacht repository's version manifest.
 
 ### Required Secrets
 
 | Secret                     | Description                                        |
 | -------------------------- | -------------------------------------------------- |
-| `CDK_REPO_APP_ID`          | GitHub App ID for triggering workflows in CDK repo |
 | `CDK_REPO_APP_PRIVATE_KEY` | GitHub App private key for authentication          |
 
 ### Required Variables
@@ -89,4 +92,5 @@ Same setup as `sample-python-repo` - see [the CDK repo README](https://github.co
 | `CICD_ACCOUNT_ID`       | AWS account ID for the CI/CD account      |
 | `CDK_REPO_OWNER`        | GitHub org/owner of the CDK repo          |
 | `CDK_REPO_NAME`         | Name of the CDK repository                |
+| `CDK_REPO_CLIENT_ID`    | GitHub App client ID (`prod` environment) |
 | `LAMBDA_S3_BUCKET_NAME` | S3 bucket for Lambda deployment artifacts |
